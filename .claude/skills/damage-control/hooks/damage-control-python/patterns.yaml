@@ -1,0 +1,172 @@
+# Claude Code Security Patterns
+# =============================
+# Add patterns here to block dangerous commands.
+# Each script (py, sh, ts) loads this file.
+
+# These patterns are matched against Bash tool commands only
+bashToolPatterns:
+  # ---------------------------------------------------------------------------
+  # DESTRUCTIVE FILE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\brm\s+(-[^\s]*)*-[rRf]'
+    reason: rm with recursive or force flags
+
+  - pattern: '\brm\s+-[rRf]'
+    reason: rm with recursive or force flags
+
+  - pattern: '\brm\s+--recursive'
+    reason: rm with --recursive flag
+
+  - pattern: '\brm\s+--force'
+    reason: rm with --force flag
+
+  - pattern: '\bsudo\s+rm\b'
+    reason: sudo rm
+
+  - pattern: '\brmdir\s+--ignore-fail-on-non-empty'
+    reason: rmdir ignore-fail
+
+  # ---------------------------------------------------------------------------
+  # PERMISSION CHANGES
+  # ---------------------------------------------------------------------------
+  - pattern: '\bchmod\s+(-[^\s]+\s+)*777\b'
+    reason: chmod 777 (world writable)
+
+  - pattern: '\bchmod\s+-[Rr].*777'
+    reason: recursive chmod 777
+
+  - pattern: '\bchown\s+-[Rr].*\broot\b'
+    reason: recursive chown to root
+
+  # ---------------------------------------------------------------------------
+  # GIT DESTRUCTIVE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bgit\s+reset\s+--hard\b'
+    reason: git reset --hard (use --soft or stash)
+
+  - pattern: '\bgit\s+clean\s+(-[^\s]*)*-[fd]'
+    reason: git clean with force/directory flags
+
+  # Note: This blocks --force but NOT --force-with-lease
+  - pattern: '\bgit\s+push\s+.*--force(?!-with-lease)'
+    reason: git push --force (use --force-with-lease)
+
+  - pattern: '\bgit\s+push\s+(-[^\s]*)*-f\b'
+    reason: git push -f (use --force-with-lease)
+
+  # ---------------------------------------------------------------------------
+  # SYSTEM-LEVEL DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bmkfs\.'
+    reason: filesystem format command
+
+  - pattern: '\bdd\s+.*of=/dev/'
+    reason: dd writing to device
+
+  # ---------------------------------------------------------------------------
+  # PROCESS DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bkill\s+-9\s+-1\b'
+    reason: kill all processes
+
+  - pattern: '\bkillall\s+-9\b'
+    reason: killall -9
+
+  - pattern: '\bpkill\s+-9\b'
+    reason: pkill -9
+
+  # ---------------------------------------------------------------------------
+  # HISTORY/SHELL MANIPULATION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bhistory\s+-c\b'
+    reason: clearing shell history
+
+  # ---------------------------------------------------------------------------
+  # SQL DESTRUCTIVE OPERATIONS (catastrophic - no WHERE clause)
+  # ---------------------------------------------------------------------------
+  - pattern: 'DELETE\s+FROM\s+\w+\s*;'
+    reason: DELETE without WHERE clause (will delete ALL rows)
+
+  - pattern: 'DELETE\s+FROM\s+\w+\s*$'
+    reason: DELETE without WHERE clause (will delete ALL rows)
+
+  - pattern: 'DELETE\s+\*\s+FROM'
+    reason: DELETE * (will delete ALL rows)
+
+  - pattern: '\bTRUNCATE\s+TABLE\b'
+    reason: TRUNCATE TABLE (will delete ALL rows)
+
+  - pattern: '\bDROP\s+TABLE\b'
+    reason: DROP TABLE
+
+  - pattern: '\bDROP\s+DATABASE\b'
+    reason: DROP DATABASE
+
+  # ---------------------------------------------------------------------------
+  # SQL OPERATIONS REQUIRING CONFIRMATION (ask: true)
+  # ---------------------------------------------------------------------------
+  - pattern: '\bDELETE\s+FROM\s+\w+\s+WHERE\b.*\bid\s*='
+    reason: SQL DELETE with specific ID
+    ask: true
+
+# ---------------------------------------------------------------------------
+# ZERO ACCESS PATHS - No read, write, or any access allowed
+# ---------------------------------------------------------------------------
+# These contain secrets/credentials - block ALL operations including reads
+# Enforced by: Bash, Edit, Write tools
+zeroAccessPaths:
+  # SSH keys and config
+  - ~/.ssh/
+
+  # GPG keys
+  - ~/.gnupg/
+
+  # Cloud credentials
+  - ~/.aws/
+  - ~/.kube/
+  - ~/.docker/
+
+  # Credential files
+  - ~/.netrc
+  - ~/.npmrc
+  - ~/.pypirc
+
+# ---------------------------------------------------------------------------
+# READ-ONLY PATHS - Can read, but not write/edit/delete
+# ---------------------------------------------------------------------------
+# Safe to read but should never be modified
+# Enforced by: Bash, Edit, Write tools
+readOnlyPaths:
+  # System directories
+  - /etc/
+  - /usr/
+  - /bin/
+  - /sbin/
+  - /boot/
+  - /root/
+
+  # Shell history files
+  - ~/.bash_history
+  - ~/.zsh_history
+  - ~/.node_repl_history
+
+  # Shell config files
+  - ~/.bashrc
+  - ~/.zshrc
+  - ~/.profile
+  - ~/.bash_profile
+
+# ---------------------------------------------------------------------------
+# NO-DELETE PATHS - Can read/write/edit, but not delete
+# ---------------------------------------------------------------------------
+# Protect important files from accidental deletion
+# Enforced by: Bash tool only (Edit/Write don't delete files)
+noDeletePaths:
+  # This project's hooks
+  - .claude/hooks/
+  - .claude/commands/
+
+  # Common project directories worth protecting
+  # - ./src/
+  # - ./lib/
+  # - ./app/

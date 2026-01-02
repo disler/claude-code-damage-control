@@ -1,0 +1,48 @@
+# General
+.DS_Store
+.env
+.env.local
+.env.*.local
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Bun / Node / TypeScript
+node_modules/
+bun.lockb
+dist/
+out/
+*.tsbuildinfo
+.npm
+
+# Astral UV
+.uv/
+.python-version
+
+# AI Docs
+ai_docs/*.md
+!ai_docs/README.md
