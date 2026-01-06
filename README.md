@@ -119,6 +119,13 @@ The skill will guide you through:
 
 ### Option 2: Manual Installation
 
+Choose one of three runtimes:
+- **Python/UV** - Cross-platform, recommended for most users
+- **TypeScript/Bun** - Fast, modern, cross-platform
+- **Node.js** - Best for Windows compatibility ([Issue #1](https://github.com/paulrobello/claude-code-damage-control/issues/1))
+
+#### Python/UV Installation
+
 **1. Install UV (Python runtime):**
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -173,6 +180,72 @@ cat > .claude/settings.local.json << 'EOF'
 EOF
 ```
 
+#### Node.js Installation (Windows-Compatible)
+
+**1. Ensure Node.js is installed:**
+```bash
+node --version  # Should be >= 14.0.0
+```
+
+**2. Copy the skill to your project:**
+```bash
+cp -r .claude/skills /path/to/your/project/.claude/
+```
+
+**3. Create hooks directory and copy files:**
+```bash
+cd /path/to/your/project
+mkdir -p .claude/hooks/damage-control
+cp .claude/skills/damage-control/hooks/damage-control-nodejs/*.js .claude/hooks/damage-control/
+cp .claude/skills/damage-control/hooks/damage-control-nodejs/package.json .claude/hooks/damage-control/
+cp .claude/skills/damage-control/patterns.yaml .claude/hooks/damage-control/
+```
+
+**4. Install dependencies:**
+```bash
+cd .claude/hooks/damage-control
+npm install
+cd ../..
+```
+
+**5. Create settings.local.json:**
+```bash
+cat > .claude/settings.local.json << 'EOF'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/damage-control/bash-tool-damage-control.js",
+          "timeout": 5
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/damage-control/edit-tool-damage-control.js",
+          "timeout": 5
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/damage-control/write-tool-damage-control.js",
+          "timeout": 5
+        }]
+      }
+    ]
+  }
+}
+EOF
+```
+
+---
+
 **5. Restart Claude Code** for hooks to take effect.
 
 **6. Test the installation:**
@@ -219,9 +292,14 @@ This simulates a rogue AI attempting destructive commands - all should be blocke
         │   ├── damage-control-python/     # Python/UV implementation
         │   │   ├── *.py
         │   │   └── python-settings.json
-        │   └── damage-control-typescript/ # Bun/TS implementation
-        │       ├── *.ts
-        │       └── typescript-settings.json
+        │   ├── damage-control-typescript/ # Bun/TS implementation
+        │   │   ├── *.ts
+        │   │   └── typescript-settings.json
+        │   └── damage-control-nodejs/     # Node.js implementation (Windows-compatible)
+        │       ├── *.js
+        │       ├── package.json
+        │       ├── nodejs-settings.json
+        │       └── README.md
         └── test-prompts/              # Test prompts
             ├── README.md              # Read this before running the test prompts
             ├── sentient.md            # Test sentient AI behavior
@@ -240,7 +318,7 @@ After installation, your project will also have:
 └── hooks/
     └── damage-control/                # Active hooks (copied by install)
         ├── patterns.yaml
-        ├── bash-tool-damage-control.py (or .ts)
+        ├── bash-tool-damage-control.py (or .ts or .js)
         ├── edit-tool-damage-control.py
         └── write-tool-damage-control.py
 ```

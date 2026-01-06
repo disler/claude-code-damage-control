@@ -1,0 +1,23 @@
+{
+  "name": "damage-control-nodejs",
+  "version": "1.0.0",
+  "description": "Claude Code Damage Control hooks - Node.js implementation with Windows support",
+  "main": "bash-tool-damage-control.js",
+  "scripts": {
+    "test": "node bash-tool-damage-control.js"
+  },
+  "keywords": [
+    "claude-code",
+    "security",
+    "hooks",
+    "damage-control"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
