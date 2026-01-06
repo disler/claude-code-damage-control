@@ -79,41 +79,171 @@ Options:
 8. Add the following Windows-specific patterns to `bashToolPatterns`:
 
 ```yaml
+# ===========================================================================
+# WINDOWS PATTERNS
+# ===========================================================================
+
 # ---------------------------------------------------------------------------
-# WINDOWS DESTRUCTIVE FILE OPERATIONS (PowerShell)
+# WINDOWS CATASTROPHIC - Unix-style paths (WSL / Git Bash / MSYS2)
+# ---------------------------------------------------------------------------
+# WSL path to Windows home (/mnt/c/Users/...)
+- pattern: '\brm\s+.*-[rR].*\s+/mnt/c/[Uu]sers(/[^/\s]*)?(/\*?)?(\s*$|\s+[;&|])'
+  reason: rm recursive on Windows home via WSL (/mnt/c/Users) - CATASTROPHIC
+
+# Git Bash / MSYS2 path to Windows home (/c/Users/...)
+- pattern: '\brm\s+.*-[rR].*\s+/c/[Uu]sers(/[^/\s]*)?(/\*?)?(\s*$|\s+[;&|])'
+  reason: rm recursive on Windows home via Git Bash (/c/Users) - CATASTROPHIC
+
+# ---------------------------------------------------------------------------
+# WINDOWS CATASTROPHIC - Hard block (PowerShell)
+# ---------------------------------------------------------------------------
+# Home directory via ~ or $HOME or $env:USERPROFILE
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+~[/\\]?(\s|$)'
+  reason: Remove-Item -Recurse on home directory (~) - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$HOME[/\\]?(\s|$)'
+  reason: Remove-Item -Recurse on $HOME - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:USERPROFILE[/\\]?(\s|$)'
+  reason: Remove-Item -Recurse on $env:USERPROFILE - CATASTROPHIC
+
+# Windows Users directory (C:\Users or C:/Users)
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\][Uu]sers[/\\]?[^/\\\s]*[''"]?(\s|$)'
+  reason: Remove-Item -Recurse on C:\Users - CATASTROPHIC
+
+# System root (C:\ alone)
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]?[''"]?(\s|$)'
+  reason: Remove-Item -Recurse on C:\ root - CATASTROPHIC
+
+# Windows system directories
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]Windows'
+  reason: Remove-Item -Recurse on C:\Windows - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]Program Files'
+  reason: Remove-Item -Recurse on C:\Program Files - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]ProgramData'
+  reason: Remove-Item -Recurse on C:\ProgramData - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]Boot'
+  reason: Remove-Item -Recurse on C:\Boot - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]Recovery'
+  reason: Remove-Item -Recurse on C:\Recovery - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+[''"]?[Cc]:[/\\]System Volume Information'
+  reason: Remove-Item -Recurse on C:\System Volume Information - CATASTROPHIC
+
+# PowerShell environment variables pointing to system paths
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:SystemRoot'
+  reason: Remove-Item -Recurse on $env:SystemRoot - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:ProgramFiles'
+  reason: Remove-Item -Recurse on $env:ProgramFiles - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:ProgramData'
+  reason: Remove-Item -Recurse on $env:ProgramData - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:APPDATA'
+  reason: Remove-Item -Recurse on $env:APPDATA - CATASTROPHIC
+
+- pattern: '\bRemove-Item\s+.*-Recurse.*\s+\$env:LOCALAPPDATA'
+  reason: Remove-Item -Recurse on $env:LOCALAPPDATA - CATASTROPHIC
+
+# ---------------------------------------------------------------------------
+# WINDOWS CATASTROPHIC - Hard block (cmd)
+# ---------------------------------------------------------------------------
+# rd /s on critical paths
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\][Uu]sers[/\\]?[^/\\\s]*[''"]?(\s|$)'
+  reason: rd /s on C:\Users - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]?[''"]?(\s|$)'
+  reason: rd /s on C:\ root - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]Windows'
+  reason: rd /s on C:\Windows - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]Program Files'
+  reason: rd /s on C:\Program Files - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]ProgramData'
+  reason: rd /s on C:\ProgramData - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]Boot'
+  reason: rd /s on C:\Boot - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]Recovery'
+  reason: rd /s on C:\Recovery - CATASTROPHIC
+
+- pattern: '\brd\s+/s.*\s+[''"]?[Cc]:[/\\]System Volume Information'
+  reason: rd /s on C:\System Volume Information - CATASTROPHIC
+
+# rmdir /s on critical paths
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\][Uu]sers[/\\]?[^/\\\s]*[''"]?(\s|$)'
+  reason: rmdir /s on C:\Users - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]?[''"]?(\s|$)'
+  reason: rmdir /s on C:\ root - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]Windows'
+  reason: rmdir /s on C:\Windows - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]Program Files'
+  reason: rmdir /s on C:\Program Files - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]ProgramData'
+  reason: rmdir /s on C:\ProgramData - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]Boot'
+  reason: rmdir /s on C:\Boot - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]Recovery'
+  reason: rmdir /s on C:\Recovery - CATASTROPHIC
+
+- pattern: '\brmdir\s+/s.*\s+[''"]?[Cc]:[/\\]System Volume Information'
+  reason: rmdir /s on C:\System Volume Information - CATASTROPHIC
+
+# ---------------------------------------------------------------------------
+# WINDOWS DESTRUCTIVE FILE OPERATIONS (PowerShell) - Ask
 # ---------------------------------------------------------------------------
 - pattern: '\bRemove-Item\s+.*-Recurse'
   reason: Remove-Item with -Recurse flag (PowerShell rm -rf equivalent)
+  ask: true
 
 - pattern: '\bRemove-Item\s+.*-Force'
   reason: Remove-Item with -Force flag (PowerShell rm -f equivalent)
+  ask: true
 
 - pattern: '\bri\s+.*-Recurse'
   reason: ri (Remove-Item alias) with -Recurse
+  ask: true
 
 - pattern: '\bdel\s+.*-Recurse'
   reason: del (Remove-Item alias) with -Recurse
-
-- pattern: '\bRemove-Item\s+-Path\s+[''"]?[\\/\*]'
-  reason: Remove-Item targeting root paths
+  ask: true
 
 # ---------------------------------------------------------------------------
-# WINDOWS DESTRUCTIVE FILE OPERATIONS (cmd)
+# WINDOWS DESTRUCTIVE FILE OPERATIONS (cmd) - Ask
 # ---------------------------------------------------------------------------
 - pattern: '\brd\s+/s'
   reason: rd /s (recursive directory delete)
+  ask: true
 
 - pattern: '\brmdir\s+/s'
   reason: rmdir /s (recursive directory delete)
+  ask: true
 
 - pattern: '\bdel\s+/[fF]'
   reason: del /f (force delete)
+  ask: true
 
 - pattern: '\bdel\s+/[sS]'
   reason: del /s (recursive delete)
+  ask: true
 
 - pattern: '\berase\s+/[fFsS]'
   reason: erase with force/recursive flags
+  ask: true
 
 # ---------------------------------------------------------------------------
 # WINDOWS PERMISSION CHANGES
@@ -210,12 +340,26 @@ Present the update summary:
 
 ### Windows Patterns Added
 
-**PowerShell Destructive Operations**:
-- `Remove-Item -Recurse/-Force`
+**CATASTROPHIC (Hard Block) - WSL / Git Bash / MSYS2**:
+- `rm -r` on `/mnt/c/Users` (WSL path to Windows home)
+- `rm -r` on `/c/Users` (Git Bash/MSYS2 path to Windows home)
+
+**CATASTROPHIC (Hard Block) - PowerShell**:
+- `Remove-Item -Recurse` on `~`, `$HOME`, `$env:USERPROFILE`
+- `Remove-Item -Recurse` on `C:\Users`, `C:\`, `C:\Windows`
+- `Remove-Item -Recurse` on `C:\Program Files`, `C:\ProgramData`, `C:\Boot`, `C:\Recovery`
+- `Remove-Item -Recurse` on `$env:SystemRoot`, `$env:ProgramFiles`, `$env:APPDATA`
+
+**CATASTROPHIC (Hard Block) - cmd**:
+- `rd /s` and `rmdir /s` on `C:\Users`, `C:\`, `C:\Windows`
+- `rd /s` and `rmdir /s` on `C:\Program Files`, `C:\ProgramData`, `C:\Boot`, `C:\Recovery`
+
+**Ask Confirmation - PowerShell**:
+- `Remove-Item -Recurse/-Force` (general paths)
 - `ri`, `del` aliases with recursive flags
 
-**cmd Destructive Operations**:
-- `rd /s`, `rmdir /s`
+**Ask Confirmation - cmd**:
+- `rd /s`, `rmdir /s` (general paths)
 - `del /f /s`, `erase`
 
 **Permission Changes**:

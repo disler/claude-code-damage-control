@@ -6,19 +6,41 @@
 # These patterns are matched against Bash tool commands only
 bashToolPatterns:
   # ---------------------------------------------------------------------------
+  # GIT RM - Must come before general rm patterns to avoid false matches
+  # ---------------------------------------------------------------------------
+  - pattern: '\bgit\s+rm\b'
+    reason: git rm (removes files from working tree and index)
+    ask: true
+
+  # ---------------------------------------------------------------------------
   # DESTRUCTIVE FILE OPERATIONS
   # ---------------------------------------------------------------------------
+  # CATASTROPHIC - Hard block rm recursive on home or root (order matters!)
+  - pattern: '\brm\s+.*-[rR].*\s+~(/\*?)?(\s*$|\s+[;&|])'
+    reason: rm recursive on home directory (~) - CATASTROPHIC
+
+  - pattern: '\brm\s+.*-[rR].*\s+\$\{?HOME\}?(/\*?)?(\s*$|\s+[;&|])'
+    reason: rm recursive on $HOME - CATASTROPHIC
+
+  - pattern: '\brm\s+.*-[rR].*\s+/\*?(\s*$|\s+[;&|])'
+    reason: rm recursive on root (/) - CATASTROPHIC
+
+  # Regular rm with recursive/force - ask for confirmation
   - pattern: '\brm\s+(-[^\s]*)*-[rRf]'
     reason: rm with recursive or force flags
+    ask: true
 
   - pattern: '\brm\s+-[rRf]'
     reason: rm with recursive or force flags
+    ask: true
 
   - pattern: '\brm\s+--recursive'
     reason: rm with --recursive flag
+    ask: true
 
   - pattern: '\brm\s+--force'
     reason: rm with --force flag
+    ask: true
 
   - pattern: '\bsudo\s+rm\b'
     reason: sudo rm
