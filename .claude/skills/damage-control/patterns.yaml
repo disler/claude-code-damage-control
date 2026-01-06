@@ -8,11 +8,8 @@ bashToolPatterns:
   # ---------------------------------------------------------------------------
   # DESTRUCTIVE FILE OPERATIONS
   # ---------------------------------------------------------------------------
-  - pattern: '\brm\s+(-[^\s]*)*-[rRf]'
-    reason: rm with recursive or force flags
-
-  - pattern: '\brm\s+-[rRf]'
-    reason: rm with recursive or force flags
+  - pattern: '\brm\s+(?:-[rRf]+|-[a-zA-Z]*[rRf][a-zA-Z]*)'
+    reason: rm with recursive or force flags (catches -r, -f, -rf, -fr, etc.)
 
   - pattern: '\brm\s+--recursive'
     reason: rm with --recursive flag
@@ -44,14 +41,14 @@ bashToolPatterns:
   - pattern: '\bgit\s+reset\s+--hard\b'
     reason: git reset --hard (use --soft or stash)
 
-  - pattern: '\bgit\s+clean\s+(-[^\s]*)*-[fd]'
-    reason: git clean with force/directory flags
+  - pattern: '\bgit\s+clean\s+(?:-[fd]+|-[a-zA-Z]*[fd][a-zA-Z]*)'
+    reason: git clean with force/directory flags (catches -f, -d, -fd, -df, etc.)
 
   # Note: This blocks --force but NOT --force-with-lease
   - pattern: '\bgit\s+push\s+.*--force(?!-with-lease)'
     reason: git push --force (use --force-with-lease)
 
-  - pattern: '\bgit\s+push\s+(-[^\s]*)*-f\b'
+  - pattern: '\bgit\s+push\s+(?:-f\b|-[a-zA-Z]*f\b)'
     reason: git push -f (use --force-with-lease)
 
   - pattern: '\bgit\s+stash\s+clear\b'
@@ -81,7 +78,7 @@ bashToolPatterns:
     reason: Permanently deletes a stash
     ask: true
 
-  - pattern: '\bgit\s+branch\s+(-[^\s]*)*-D'
+  - pattern: '\bgit\s+branch\s+(?:-D\b|-[a-zA-Z]*D\b)'
     reason: Force deletes branch (even if unmerged)
     ask: true
 
@@ -354,9 +351,6 @@ bashToolPatterns:
   - pattern: 'DELETE\s+FROM\s+\w+\s*$'
     reason: DELETE without WHERE clause (will delete ALL rows)
 
-  - pattern: 'DELETE\s+\*\s+FROM'
-    reason: DELETE * (will delete ALL rows)
-
   - pattern: '\bTRUNCATE\s+TABLE\b'
     reason: TRUNCATE TABLE (will delete ALL rows)
 
@@ -379,6 +373,7 @@ bashToolPatterns:
 # These contain secrets/credentials - block ALL operations including reads
 # Enforced by: Bash, Edit, Write tools
 # Supports glob patterns: *.pem, .env*, *-credentials.json
+# NOTE: Ensure your implementation expands ~ to actual home directory path
 zeroAccessPaths:
   # ---------------------------------------------------------------------------
   # ENVIRONMENT FILES (HIGH RISK - contain secrets)
