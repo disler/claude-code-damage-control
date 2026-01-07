@@ -23,7 +23,9 @@ This skill helps users deploy and manage the Damage Control security system, whi
 ```
 .claude/skills/damage-control/
 ├── SKILL.md                     # This file
-├── patterns.yaml                # Shared security patterns (single source of truth)
+├── patterns-base.yaml           # Cross-platform patterns (git, cloud CLIs, SQL, docker, k8s)
+├── patterns-unix.yaml           # Unix/macOS patterns (rm -rf, chmod, find -delete, etc.)
+├── patterns-windows.yaml        # Windows patterns (Remove-Item, icacls, registry, etc.)
 ├── cookbook/
 │   ├── install_damage_control_ag_workflow.md
 │   ├── modify_damage_control_ag_workflow.md
@@ -36,7 +38,8 @@ This skill helps users deploy and manage the Damage Control security system, whi
 │   │   ├── bash-tool-damage-control.py
 │   │   ├── edit-tool-damage-control.py
 │   │   ├── write-tool-damage-control.py
-│   │   ├── python-settings.json
+│   │   ├── unix-settings.json      # Settings template for Unix/macOS
+│   │   ├── windows-settings.json   # Settings template for Windows
 │   │   └── test-damage-control.py
 │   └── damage-control-typescript/  # Bun/TypeScript implementation
 │       ├── bash-tool-damage-control.ts
@@ -51,6 +54,8 @@ This skill helps users deploy and manage the Damage Control security system, whi
     └── sentient_v4.md
 ```
 
+> **Cross-Platform Support**: The hooks auto-detect the platform at runtime and load the appropriate patterns. All three pattern files are installed together for portability.
+
 ## After Installation
 
 The install workflow copies hooks and creates settings based on the chosen level:
@@ -61,7 +66,9 @@ The install workflow copies hooks and creates settings based on the chosen level
 ├── settings.json                      # Hook configuration
 └── hooks/
     └── damage-control/
-        ├── patterns.yaml
+        ├── patterns-base.yaml         # Cross-platform patterns
+        ├── patterns-unix.yaml         # Unix/macOS patterns
+        ├── patterns-windows.yaml      # Windows patterns
         ├── bash-tool-damage-control.py (or .ts)
         ├── edit-tool-damage-control.py
         └── write-tool-damage-control.py
@@ -74,7 +81,9 @@ The install workflow copies hooks and creates settings based on the chosen level
     ├── settings.json                  # Hook configuration (shared)
     └── hooks/
         └── damage-control/
-            ├── patterns.yaml
+            ├── patterns-base.yaml
+            ├── patterns-unix.yaml
+            ├── patterns-windows.yaml
             ├── bash-tool-damage-control.py (or .ts)
             ├── edit-tool-damage-control.py
             └── write-tool-damage-control.py
@@ -87,7 +96,9 @@ The install workflow copies hooks and creates settings based on the chosen level
     ├── settings.local.json            # Personal overrides (gitignored)
     └── hooks/
         └── damage-control/
-            ├── patterns.yaml
+            ├── patterns-base.yaml
+            ├── patterns-unix.yaml
+            ├── patterns-windows.yaml
             ├── bash-tool-damage-control.py (or .ts)
             ├── edit-tool-damage-control.py
             └── write-tool-damage-control.py

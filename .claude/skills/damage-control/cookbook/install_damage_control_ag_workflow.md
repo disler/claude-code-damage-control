@@ -10,7 +10,9 @@ Guide the user through installing the Damage Control security hooks system at th
 ## Variables
 
 SKILL_DIR: .claude/skills/damage-control
-PATTERNS_FILE: SKILL_DIR/patterns.yaml
+PATTERNS_BASE: SKILL_DIR/patterns-base.yaml
+PATTERNS_UNIX: SKILL_DIR/patterns-unix.yaml
+PATTERNS_WINDOWS: SKILL_DIR/patterns-windows.yaml
 GLOBAL_SETTINGS: ~/.claude/settings.json
 PROJECT_SETTINGS: .claude/settings.json
 LOCAL_SETTINGS: .claude/settings.local.json
@@ -18,11 +20,23 @@ LOCAL_SETTINGS: .claude/settings.local.json
 ## Instructions
 
 - Use the AskUserQuestion tool at each decision point to guide the user
+- **Auto-detect platform** (Windows vs Unix/macOS) to select correct settings template
 - Check for existing settings before installation
 - Handle merge/overwrite conflicts gracefully
 - Copy the appropriate hook implementation (Python or TypeScript)
-- Ensure the patterns.yaml file is included with the hooks
+- **Copy all three pattern files** (base + platform-specific) with the hooks
 - Verify installation by checking file existence after copy
+
+## Platform Detection
+
+Detect the platform at the start of the workflow:
+- **Windows**: Check if running PowerShell or if paths use backslashes
+- **Unix/macOS**: Default for non-Windows systems
+
+This determines:
+1. Which settings template to use (unix-settings.json vs windows-settings.json)
+2. Path separators in hook commands
+3. Which pattern files are relevant (though all are copied for portability)
 
 ## Workflow
 
@@ -86,26 +100,52 @@ Options:
 
 11. Create target hooks directory if it doesn't exist:
 ```bash
+# Unix/macOS
 mkdir -p [TARGET_HOOKS_DIR]
+
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force -Path [TARGET_HOOKS_DIR]
 ```
 
 12. Copy hook scripts from runtime-specific directory:
 ```bash
+# Unix/macOS
 cp [SOURCE_DIR]/*.py [TARGET_HOOKS_DIR]/   # For Python
 # OR
 cp [SOURCE_DIR]/*.ts [TARGET_HOOKS_DIR]/   # For TypeScript
+
+# Windows (PowerShell)
+Copy-Item [SOURCE_DIR]\*.py [TARGET_HOOKS_DIR]\   # For Python
+# OR
+Copy-Item [SOURCE_DIR]\*.ts [TARGET_HOOKS_DIR]\   # For TypeScript
 ```
 
-13. Copy the shared patterns.yaml from skill root:
+13. Copy ALL pattern files from skill root (for cross-platform portability):
 ```bash
-cp SKILL_DIR/patterns.yaml [TARGET_HOOKS_DIR]/
+# Unix/macOS
+cp SKILL_DIR/patterns-base.yaml [TARGET_HOOKS_DIR]/
+cp SKILL_DIR/patterns-unix.yaml [TARGET_HOOKS_DIR]/
+cp SKILL_DIR/patterns-windows.yaml [TARGET_HOOKS_DIR]/
+
+# Windows (PowerShell)
+Copy-Item SKILL_DIR\patterns-base.yaml [TARGET_HOOKS_DIR]\
+Copy-Item SKILL_DIR\patterns-unix.yaml [TARGET_HOOKS_DIR]\
+Copy-Item SKILL_DIR\patterns-windows.yaml [TARGET_HOOKS_DIR]\
 ```
+
+> **Note**: All three pattern files are copied regardless of platform. The hooks auto-detect the platform at runtime and load the appropriate patterns.
 
 ### Step 5: Install Settings Configuration
 
-14. Read the appropriate settings template:
-    - Python: `${SKILL_DIR}/hooks/damage-control-python/python-settings.json`
-    - TypeScript: `${SKILL_DIR}/hooks/damage-control-typescript/typescript-settings.json`
+14. Read the appropriate settings template based on RUNTIME and PLATFORM:
+
+**Python Runtime:**
+- Windows: `${SKILL_DIR}/hooks/damage-control-python/windows-settings.json`
+- Unix/macOS: `${SKILL_DIR}/hooks/damage-control-python/unix-settings.json`
+
+**TypeScript Runtime:**
+- Windows: `${SKILL_DIR}/hooks/damage-control-typescript/typescript-settings.json` (update paths for Windows)
+- Unix/macOS: `${SKILL_DIR}/hooks/damage-control-typescript/typescript-settings.json`
 
 15. **For Fresh Install or Overwrite**:
     - Write the settings template to TARGET_SETTINGS
@@ -131,10 +171,12 @@ ls -la [TARGET_HOOKS_DIR]/
 cat [TARGET_SETTINGS] | head -20
 ```
 
-19. Make hook scripts executable:
+19. Make hook scripts executable (Unix/macOS only):
 ```bash
 chmod +x [TARGET_HOOKS_DIR]/*.py [TARGET_HOOKS_DIR]/*.ts 2>/dev/null || true
 ```
+
+> **Windows**: No chmod needed - Python/TypeScript files are executed via their interpreters.
 
 ### Step 7: Display Runtime Install Instructions
 
@@ -187,8 +229,9 @@ Present the installation summary:
 - `bash-tool-damage-control.[py|ts]` - Command pattern blocking
 - `edit-tool-damage-control.[py|ts]` - Edit path protection
 - `write-tool-damage-control.[py|ts]` - Write path protection
-- `permission-request-damage-control.[py|ts]` - SQL DELETE confirmation
-- `patterns.yaml` - Security patterns and protected paths
+- `patterns-base.yaml` - Cross-platform patterns (git, cloud CLIs, SQL, docker, k8s)
+- `patterns-unix.yaml` - Unix/macOS patterns (rm -rf, chmod, find -delete, etc.)
+- `patterns-windows.yaml` - Windows patterns (Remove-Item, icacls, registry, etc.)
 
 ### Runtime Setup
 [Display appropriate install command based on runtime]

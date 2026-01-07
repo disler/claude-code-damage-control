@@ -33,6 +33,25 @@ def is_glob_pattern(pattern: str) -> bool:
     return '*' in pattern or '?' in pattern or '[' in pattern
 
 
+def expand_path(path: str) -> str:
+    """Expand environment variables and user home in path (cross-platform)."""
+    # Handle Windows %VAR% style
+    expanded = os.path.expandvars(path)
+
+    # Handle ~ for user home
+    expanded = os.path.expanduser(expanded)
+
+    return expanded
+
+
+def normalize_for_matching(path: str) -> str:
+    """Normalize path for comparison (handle case-insensitivity on Windows)."""
+    normalized = os.path.normpath(expand_path(path))
+    if sys.platform == "win32":
+        normalized = normalized.lower()
+    return normalized
+
+
 def glob_to_regex(glob_pattern: str) -> str:
     """Convert a glob pattern to a regex pattern for matching in commands."""
     # Escape special regex chars except * and ?
@@ -53,98 +72,200 @@ def glob_to_regex(glob_pattern: str) -> str:
 # ============================================================================
 # {path} will be replaced with the escaped path at runtime
 
-# Operations blocked for READ-ONLY paths (all modifications)
-WRITE_PATTERNS = [
+# Unix operations blocked for READ-ONLY paths (all modifications)
+UNIX_WRITE_PATTERNS = [
     (r'>\s*{path}', "write"),
     (r'\btee\s+(?!.*-a).*{path}', "write"),
 ]
 
-APPEND_PATTERNS = [
+UNIX_APPEND_PATTERNS = [
     (r'>>\s*{path}', "append"),
     (r'\btee\s+-a\s+.*{path}', "append"),
     (r'\btee\s+.*-a.*{path}', "append"),
 ]
 
-EDIT_PATTERNS = [
+UNIX_EDIT_PATTERNS = [
     (r'\bsed\s+-i.*{path}', "edit"),
     (r'\bperl\s+-[^\s]*i.*{path}', "edit"),
     (r'\bawk\s+-i\s+inplace.*{path}', "edit"),
 ]
 
-MOVE_COPY_PATTERNS = [
+UNIX_MOVE_COPY_PATTERNS = [
     (r'\bmv\s+.*\s+{path}', "move"),
     (r'\bcp\s+.*\s+{path}', "copy"),
 ]
 
-DELETE_PATTERNS = [
+UNIX_DELETE_PATTERNS = [
     (r'\brm\s+.*{path}', "delete"),
     (r'\bunlink\s+.*{path}', "delete"),
     (r'\brmdir\s+.*{path}', "delete"),
     (r'\bshred\s+.*{path}', "delete"),
 ]
 
-PERMISSION_PATTERNS = [
+UNIX_PERMISSION_PATTERNS = [
     (r'\bchmod\s+.*{path}', "chmod"),
     (r'\bchown\s+.*{path}', "chown"),
     (r'\bchgrp\s+.*{path}', "chgrp"),
 ]
 
-TRUNCATE_PATTERNS = [
+UNIX_TRUNCATE_PATTERNS = [
     (r'\btruncate\s+.*{path}', "truncate"),
     (r':\s*>\s*{path}', "truncate"),
 ]
 
-# Combined patterns for read-only paths (block ALL modifications)
-READ_ONLY_BLOCKED = (
-    WRITE_PATTERNS +
-    APPEND_PATTERNS +
-    EDIT_PATTERNS +
-    MOVE_COPY_PATTERNS +
-    DELETE_PATTERNS +
-    PERMISSION_PATTERNS +
-    TRUNCATE_PATTERNS
-)
+# Windows operations
+WINDOWS_WRITE_PATTERNS = [
+    (r'>\s*{path}', "write"),
+    (r'\bOut-File\s+.*{path}', "write"),
+    (r'\bSet-Content\s+.*{path}', "write"),
+]
 
-# Patterns for no-delete paths (block ONLY delete operations)
-NO_DELETE_BLOCKED = DELETE_PATTERNS
+WINDOWS_COPY_PATTERNS = [
+    (r'\bcopy\s+.*\s+{path}', "copy"),
+    (r'\bxcopy\s+.*\s+{path}', "copy"),
+    (r'\bCopy-Item\s+.*{path}', "copy"),
+    (r'\brobocopy\s+.*\s+{path}', "copy"),
+]
+
+WINDOWS_MOVE_PATTERNS = [
+    (r'\bmove\s+.*\s+{path}', "move"),
+    (r'\bMove-Item\s+.*{path}', "move"),
+]
+
+WINDOWS_DELETE_PATTERNS = [
+    (r'\bdel\s+.*{path}', "delete"),
+    (r'\berase\s+.*{path}', "delete"),
+    (r'\brd\s+.*{path}', "delete"),
+    (r'\brmdir\s+.*{path}', "delete"),
+    (r'\bRemove-Item\s+.*{path}', "delete"),
+]
+
+WINDOWS_PERMISSION_PATTERNS = [
+    (r'\bicacls\s+.*{path}', "icacls"),
+    (r'\bcacls\s+.*{path}', "cacls"),
+    (r'\btakeown\s+.*{path}', "takeown"),
+    (r'\battrib\s+.*{path}', "attrib"),
+    (r'\bSet-Acl\s+.*{path}', "Set-Acl"),
+]
+
+# Combined patterns for read-only paths (block ALL modifications)
+def get_read_only_blocked() -> List[Tuple[str, str]]:
+    """Get the appropriate read-only blocked patterns for the current platform."""
+    if sys.platform == "win32":
+        return (
+            WINDOWS_WRITE_PATTERNS +
+            WINDOWS_COPY_PATTERNS +
+            WINDOWS_MOVE_PATTERNS +
+            WINDOWS_DELETE_PATTERNS +
+            WINDOWS_PERMISSION_PATTERNS
+        )
+    else:
+        return (
+            UNIX_WRITE_PATTERNS +
+            UNIX_APPEND_PATTERNS +
+            UNIX_EDIT_PATTERNS +
+            UNIX_MOVE_COPY_PATTERNS +
+            UNIX_DELETE_PATTERNS +
+            UNIX_PERMISSION_PATTERNS +
+            UNIX_TRUNCATE_PATTERNS
+        )
+
+
+def get_no_delete_blocked() -> List[Tuple[str, str]]:
+    """Get the appropriate no-delete patterns for the current platform."""
+    if sys.platform == "win32":
+        return WINDOWS_DELETE_PATTERNS
+    else:
+        return UNIX_DELETE_PATTERNS
 
 # ============================================================================
 # CONFIGURATION LOADING
 # ============================================================================
 
-def get_config_path() -> Path:
-    """Get path to patterns.yaml, checking multiple locations."""
+def get_config_dir() -> Path:
+    """Get the directory containing pattern config files."""
     # 1. Check project hooks directory (installed location)
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if project_dir:
-        project_config = Path(project_dir) / ".claude" / "hooks" / "damage-control" / "patterns.yaml"
-        if project_config.exists():
-            return project_config
+        project_config_dir = Path(project_dir) / ".claude" / "hooks" / "damage-control"
+        if (project_config_dir / "patterns-base.yaml").exists():
+            return project_config_dir
 
     # 2. Check script's own directory (installed location)
     script_dir = Path(__file__).parent
-    local_config = script_dir / "patterns.yaml"
-    if local_config.exists():
-        return local_config
+    if (script_dir / "patterns-base.yaml").exists():
+        return script_dir
 
     # 3. Check skill root directory (development location)
-    skill_root = script_dir.parent.parent / "patterns.yaml"
-    if skill_root.exists():
+    skill_root = script_dir.parent.parent
+    if (skill_root / "patterns-base.yaml").exists():
         return skill_root
 
-    return local_config  # Default, even if it doesn't exist
+    # 4. Fallback to old single-file location for backwards compatibility
+    if project_dir:
+        project_config = Path(project_dir) / ".claude" / "hooks" / "damage-control" / "patterns.yaml"
+        if project_config.exists():
+            return project_config.parent
+
+    return skill_root  # Default
+
+
+def get_platform_name() -> str:
+    """Get the platform-specific config file suffix."""
+    if sys.platform == "win32":
+        return "windows"
+    elif sys.platform == "darwin":
+        return "unix"  # macOS uses Unix patterns
+    else:
+        return "unix"  # Linux and other Unix-like systems
+
+
+def merge_configs(base: Dict[str, Any], platform: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge base config with platform-specific config."""
+    merged = {}
+
+    # Merge list fields by concatenation
+    list_fields = ["bashToolPatterns", "zeroAccessPaths", "readOnlyPaths", "noDeletePaths"]
+    for field in list_fields:
+        base_list = base.get(field, [])
+        platform_list = platform.get(field, [])
+        merged[field] = base_list + platform_list
+
+    return merged
 
 
 def load_config() -> Dict[str, Any]:
-    """Load patterns from YAML config file."""
-    config_path = get_config_path()
+    """Load patterns from YAML config files (base + platform-specific)."""
+    config_dir = get_config_dir()
+    platform = get_platform_name()
 
-    if not config_path.exists():
-        print(f"Warning: Config not found at {config_path}", file=sys.stderr)
-        return {"bashToolPatterns": [], "zeroAccessPaths": [], "readOnlyPaths": [], "noDeletePaths": []}
+    base_config: Dict[str, Any] = {}
+    platform_config: Dict[str, Any] = {}
 
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f) or {}
+    # Load base config
+    base_path = config_dir / "patterns-base.yaml"
+    if base_path.exists():
+        with open(base_path, "r") as f:
+            base_config = yaml.safe_load(f) or {}
+
+    # Load platform-specific config
+    platform_path = config_dir / f"patterns-{platform}.yaml"
+    if platform_path.exists():
+        with open(platform_path, "r") as f:
+            platform_config = yaml.safe_load(f) or {}
+
+    # If we have split configs, merge them
+    if base_config or platform_config:
+        return merge_configs(base_config, platform_config)
+
+    # Fallback: try loading old single-file patterns.yaml
+    legacy_path = config_dir / "patterns.yaml"
+    if legacy_path.exists():
+        with open(legacy_path, "r") as f:
+            return yaml.safe_load(f) or {}
+
+    print(f"Warning: No config found in {config_dir}", file=sys.stderr)
+    return {"bashToolPatterns": [], "zeroAccessPaths": [], "readOnlyPaths": [], "noDeletePaths": []}
 
 
 # ============================================================================
@@ -174,7 +295,7 @@ def check_path_patterns(command: str, path: str, patterns: List[Tuple[str, str]]
                 continue
     else:
         # Original literal path matching (prefix-based)
-        expanded = os.path.expanduser(path)
+        expanded = expand_path(path)
         escaped_expanded = re.escape(expanded)
         escaped_original = re.escape(path)
 
@@ -231,23 +352,27 @@ def check_command(command: str, config: Dict[str, Any]) -> Tuple[bool, bool, str
                 continue
         else:
             # Original literal path matching
-            expanded = os.path.expanduser(zero_path)
+            expanded = expand_path(zero_path)
             escaped_expanded = re.escape(expanded)
             escaped_original = re.escape(zero_path)
 
-            # Check both expanded path (/Users/x/.ssh/) and original tilde form (~/.ssh/)
-            if re.search(escaped_expanded, command) or re.search(escaped_original, command):
+            # Check both expanded path and original form
+            # On Windows, also check case-insensitively
+            flags = re.IGNORECASE if sys.platform == "win32" else 0
+            if re.search(escaped_expanded, command, flags) or re.search(escaped_original, command, flags):
                 return True, False, f"Blocked: zero-access path {zero_path} (no operations allowed)"
 
     # 3. Check for modifications to read-only paths (reads allowed)
+    read_only_blocked = get_read_only_blocked()
     for readonly in read_only_paths:
-        blocked, reason = check_path_patterns(command, readonly, READ_ONLY_BLOCKED, "read-only path")
+        blocked, reason = check_path_patterns(command, readonly, read_only_blocked, "read-only path")
         if blocked:
             return True, False, reason
 
     # 4. Check for deletions on no-delete paths (read/write/edit allowed)
+    no_delete_blocked = get_no_delete_blocked()
     for no_delete in no_delete_paths:
-        blocked, reason = check_path_patterns(command, no_delete, NO_DELETE_BLOCKED, "no-delete path")
+        blocked, reason = check_path_patterns(command, no_delete, no_delete_blocked, "no-delete path")
         if blocked:
             return True, False, reason
 

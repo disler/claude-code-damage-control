@@ -1,0 +1,418 @@
+# Claude Code Security Patterns - Windows
+# ========================================
+# Platform-specific patterns for Windows (PowerShell, CMD)
+# These are merged with patterns-base.yaml at runtime
+
+bashToolPatterns:
+  # ---------------------------------------------------------------------------
+  # POWERSHELL DESTRUCTIVE FILE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-Item\s+.*-Recurse'
+    reason: Remove-Item with -Recurse (equivalent to rm -rf)
+
+  - pattern: '\bRemove-Item\s+.*-Force'
+    reason: Remove-Item with -Force flag
+
+  - pattern: '\bRemove-Item\s+.*-Recurse.*-Force'
+    reason: Remove-Item with -Recurse -Force
+
+  # PowerShell aliases for Remove-Item
+  - pattern: '\bri\s+.*-Recurse'
+    reason: ri (Remove-Item alias) with -Recurse
+
+  - pattern: '\bdel\s+.*-Recurse'
+    reason: del (Remove-Item alias) with -Recurse
+
+  - pattern: '\berase\s+.*-Recurse'
+    reason: erase (Remove-Item alias) with -Recurse
+
+  - pattern: '\brd\s+.*-Recurse'
+    reason: rd (Remove-Item alias) with -Recurse
+
+  - pattern: '\brmdir\s+.*-Recurse'
+    reason: rmdir (Remove-Item alias) with -Recurse
+
+  # ---------------------------------------------------------------------------
+  # CMD DESTRUCTIVE FILE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\brd\s+/s\s+/q'
+    reason: rd /s /q (recursive delete, quiet mode)
+
+  - pattern: '\brmdir\s+/s\s+/q'
+    reason: rmdir /s /q (recursive directory delete)
+
+  - pattern: '\bdel\s+/s\s+/q'
+    reason: del /s /q (recursive file delete)
+
+  - pattern: '\bdel\s+/f\s+/q'
+    reason: del /f /q (force delete, quiet mode)
+
+  - pattern: '\berase\s+/s\s+/q'
+    reason: erase /s /q (recursive file delete)
+
+  # ---------------------------------------------------------------------------
+  # DISK/VOLUME OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bFormat-Volume\b'
+    reason: Format-Volume (disk format)
+
+  - pattern: '\bClear-Disk\b'
+    reason: Clear-Disk (wipes disk)
+
+  - pattern: '\bInitialize-Disk\b'
+    reason: Initialize-Disk (can destroy partition table)
+
+  - pattern: '\bRemove-Partition\b'
+    reason: Remove-Partition (deletes partition)
+
+  - pattern: '\bformat\s+[a-zA-Z]:'
+    reason: format drive command
+
+  - pattern: '\bdiskpart\b'
+    reason: diskpart (disk partitioning tool)
+
+  # ---------------------------------------------------------------------------
+  # PERMISSION/ACL CHANGES
+  # ---------------------------------------------------------------------------
+  - pattern: '\bicacls\s+.*\/grant.*Everyone:\(F\)'
+    reason: icacls granting full control to Everyone
+
+  - pattern: '\bicacls\s+.*\/grant.*\*S-1-1-0:\(F\)'
+    reason: icacls granting full control to Everyone (SID)
+
+  - pattern: '\bicacls\s+.*\/remove'
+    reason: icacls removing permissions
+
+  - pattern: '\btakeown\s+/r'
+    reason: takeown with recursive flag
+
+  - pattern: '\btakeown\s+/f\s+.*\s+/r'
+    reason: takeown force recursive
+
+  - pattern: '\bSet-Acl\b'
+    reason: Set-Acl (permission modification)
+    ask: true
+
+  - pattern: '\bcacls\b'
+    reason: cacls (legacy permission tool)
+    ask: true
+
+  - pattern: '\battrib\s+.*-[rsh]'
+    reason: attrib removing file attributes
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # REGISTRY OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-ItemProperty\s+.*HKLM:'
+    reason: Removing HKLM registry property
+
+  - pattern: '\bRemove-Item\s+.*HKLM:'
+    reason: Removing HKLM registry path
+
+  - pattern: '\bRemove-ItemProperty\s+.*HKCU:'
+    reason: Removing HKCU registry property
+    ask: true
+
+  - pattern: '\breg\s+delete\s+HKLM'
+    reason: reg delete on HKLM
+
+  - pattern: '\breg\s+delete\s+HKEY_LOCAL_MACHINE'
+    reason: reg delete on HKEY_LOCAL_MACHINE
+
+  - pattern: '\breg\s+delete\s+HKCU'
+    reason: reg delete on HKCU
+    ask: true
+
+  - pattern: '\breg\s+delete\s+HKEY_CURRENT_USER'
+    reason: reg delete on HKEY_CURRENT_USER
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # SERVICE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bStop-Service\s+.*-Force'
+    reason: Force stopping service
+
+  - pattern: '\bRemove-Service\b'
+    reason: Removing Windows service
+
+  - pattern: '\bsc\s+delete\b'
+    reason: sc delete (service removal)
+
+  - pattern: '\bsc\s+stop\b'
+    reason: sc stop (stopping service)
+    ask: true
+
+  - pattern: '\bStop-Service\b'
+    reason: Stop-Service
+    ask: true
+
+  - pattern: '\bSet-Service\s+.*-StartupType\s+Disabled'
+    reason: Disabling service startup
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # SCHEDULED TASK OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bUnregister-ScheduledTask\b'
+    reason: Removing scheduled task
+
+  - pattern: '\bschtasks\s+/delete'
+    reason: schtasks delete
+
+  - pattern: '\bschtasks\s+/end'
+    reason: schtasks end (stopping task)
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # WINDOWS DEFENDER / SECURITY
+  # ---------------------------------------------------------------------------
+  - pattern: '\bSet-MpPreference\s+.*-DisableRealtimeMonitoring'
+    reason: Disabling Windows Defender realtime monitoring
+
+  - pattern: '\bSet-MpPreference\s+.*-DisableIOAVProtection'
+    reason: Disabling Windows Defender IOAV protection
+
+  - pattern: '\bRemove-MpPreference\b'
+    reason: Removing Windows Defender preferences
+
+  - pattern: '\bRemove-MpThreat\b'
+    reason: Removing detected threat (suspicious)
+
+  # ---------------------------------------------------------------------------
+  # EVENT LOG OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bClear-EventLog\b'
+    reason: Clearing Windows event logs
+
+  - pattern: '\bwevtutil\s+cl\b'
+    reason: wevtutil clear logs
+
+  - pattern: '\bRemove-EventLog\b'
+    reason: Removing event log
+
+  # ---------------------------------------------------------------------------
+  # CERTIFICATE STORE
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-Item\s+.*Cert:\\'
+    reason: Removing certificates from store
+
+  - pattern: '\bRemove-Item\s+.*Cert://'
+    reason: Removing certificates from store
+
+  # ---------------------------------------------------------------------------
+  # HYPER-V / VM OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-VM\s+.*-Force'
+    reason: Force removing Hyper-V VM
+
+  - pattern: '\bRemove-VMSnapshot\b'
+    reason: Removing VM snapshot
+
+  - pattern: '\bRemove-VMHardDiskDrive\b'
+    reason: Removing VM hard disk
+
+  - pattern: '\bStop-VM\s+.*-Force'
+    reason: Force stopping VM
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # IIS OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-Website\b'
+    reason: Removing IIS website
+
+  - pattern: '\bRemove-WebAppPool\b'
+    reason: Removing IIS app pool
+
+  - pattern: '\bRemove-WebApplication\b'
+    reason: Removing IIS web application
+
+  - pattern: '\bStop-Website\b'
+    reason: Stopping IIS website
+    ask: true
+
+  - pattern: '\bStop-WebAppPool\b'
+    reason: Stopping IIS app pool
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # SQL SERVER OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bInvoke-Sqlcmd.*DROP\s+DATABASE'
+    reason: DROP DATABASE via Invoke-Sqlcmd
+
+  - pattern: '\bsqlcmd.*DROP\s+DATABASE'
+    reason: DROP DATABASE via sqlcmd
+
+  - pattern: '\bInvoke-Sqlcmd.*DROP\s+TABLE'
+    reason: DROP TABLE via Invoke-Sqlcmd
+
+  # ---------------------------------------------------------------------------
+  # PROCESS OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bStop-Process\s+.*-Force'
+    reason: Force stopping process
+
+  - pattern: '\btaskkill\s+/f'
+    reason: taskkill /f (force kill)
+
+  - pattern: '\btaskkill\s+/im\s+\*'
+    reason: taskkill with wildcard
+
+  # ---------------------------------------------------------------------------
+  # SYSTEM OPERATIONS REQUIRING CONFIRMATION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRestart-Computer\b'
+    reason: Restarting computer
+    ask: true
+
+  - pattern: '\bStop-Computer\b'
+    reason: Shutting down computer
+    ask: true
+
+  - pattern: '\bshutdown\s+'
+    reason: System shutdown command
+    ask: true
+
+  - pattern: '\blogoff\b'
+    reason: Log off command
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # NETWORK OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bRemove-NetIPAddress\b'
+    reason: Removing IP address
+
+  - pattern: '\bRemove-NetRoute\b'
+    reason: Removing network route
+
+  - pattern: '\bDisable-NetAdapter\b'
+    reason: Disabling network adapter
+    ask: true
+
+  - pattern: '\bnetsh\s+interface\s+set\s+interface.*disable'
+    reason: netsh disabling interface
+    ask: true
+
+  - pattern: '\bnetsh\s+advfirewall\s+reset'
+    reason: netsh firewall reset
+
+  # ---------------------------------------------------------------------------
+  # WINDOWS FEATURES
+  # ---------------------------------------------------------------------------
+  - pattern: '\bDisable-WindowsOptionalFeature\b'
+    reason: Disabling Windows feature
+    ask: true
+
+  - pattern: '\bUninstall-WindowsFeature\b'
+    reason: Uninstalling Windows feature
+    ask: true
+
+  - pattern: '\bdism\s+.*\/Remove'
+    reason: DISM removing feature
+    ask: true
+
+# ---------------------------------------------------------------------------
+# ZERO ACCESS PATHS - Windows Specific
+# ---------------------------------------------------------------------------
+zeroAccessPaths:
+  # User Profile Secrets (multiple env var formats)
+  - "%USERPROFILE%\\.ssh\\"
+  - "~\\.ssh\\"
+
+  # Windows Credential Stores
+  - "%APPDATA%\\Microsoft\\Credentials\\"
+  - "%LOCALAPPDATA%\\Microsoft\\Credentials\\"
+  - "%APPDATA%\\Microsoft\\Protect\\"
+
+  # Cloud Provider Credentials
+  - "%USERPROFILE%\\.azure\\"
+  - "%USERPROFILE%\\.aws\\"
+  - "%USERPROFILE%\\.kube\\"
+  - "%USERPROFILE%\\.docker\\"
+  - "%USERPROFILE%\\.config\\gcloud\\"
+
+  # Certificate Private Keys
+  - "%APPDATA%\\Microsoft\\Crypto\\"
+  - "%PROGRAMDATA%\\Microsoft\\Crypto\\"
+
+  # Git Credentials
+  - "%USERPROFILE%\\.git-credentials"
+  - "%APPDATA%\\git\\credentials"
+
+  # Package Manager Auth
+  - "%USERPROFILE%\\.npmrc"
+  - "%USERPROFILE%\\.netrc"
+  - "%APPDATA%\\npm\\"
+  - "%USERPROFILE%\\.nuget\\NuGet.Config"
+  - "%APPDATA%\\NuGet\\NuGet.Config"
+
+  # Platform tokens
+  - "%USERPROFILE%\\.vercel\\"
+  - "%USERPROFILE%\\.netlify\\"
+  - "%USERPROFILE%\\.supabase\\"
+
+  # VS Code secrets
+  - "%APPDATA%\\Code\\User\\secrets\\"
+  - "%APPDATA%\\Code - Insiders\\User\\secrets\\"
+
+  # JetBrains/Rider secrets
+  - "%APPDATA%\\JetBrains\\*\\options\\security.xml"
+
+  # GPG Keys
+  - "%USERPROFILE%\\.gnupg\\"
+  - "%APPDATA%\\gnupg\\"
+
+# ---------------------------------------------------------------------------
+# READ-ONLY PATHS - Windows Specific
+# ---------------------------------------------------------------------------
+readOnlyPaths:
+  # Windows System Directories
+  - "C:\\Windows\\"
+  - "C:\\Windows\\System32\\"
+  - "C:\\Windows\\SysWOW64\\"
+  - "C:\\Program Files\\"
+  - "C:\\Program Files (x86)\\"
+
+  # PowerShell History
+  - "%APPDATA%\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt"
+
+  # PowerShell Profiles
+  - "%USERPROFILE%\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1"
+  - "%USERPROFILE%\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1"
+
+  # Windows Build Artifacts
+  - "bin\\"
+  - "obj\\"
+  - "packages\\"
+  - ".vs\\"
+
+  # .NET artifacts
+  - "*.nupkg"
+
+# ---------------------------------------------------------------------------
+# NO-DELETE PATHS - Windows Specific
+# ---------------------------------------------------------------------------
+noDeletePaths:
+  # Claude config
+  - "%USERPROFILE%\\.claude\\"
+
+  # Visual Studio solution files
+  - "*.sln"
+  - "*.csproj"
+  - "*.fsproj"
+  - "*.vbproj"
+
+  # NuGet/Package config
+  - "nuget.config"
+  - "packages.config"
+  - "Directory.Build.props"
+  - "Directory.Build.targets"
+  - "global.json"
+
+  # Windows-specific project files
+  - "*.vcxproj"
+  - "*.vcproj"

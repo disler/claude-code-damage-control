@@ -1,0 +1,225 @@
+# Claude Code Security Patterns - Unix/macOS
+# ===========================================
+# Platform-specific patterns for Unix-like systems (Linux, macOS, BSD)
+# These are merged with patterns-base.yaml at runtime
+
+bashToolPatterns:
+  # ---------------------------------------------------------------------------
+  # DESTRUCTIVE FILE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\brm\s+(-[^\s]*)*-[rRf]'
+    reason: rm with recursive or force flags
+
+  - pattern: '\brm\s+-[rRf]'
+    reason: rm with recursive or force flags
+
+  - pattern: '\brm\s+--recursive'
+    reason: rm with --recursive flag
+
+  - pattern: '\brm\s+--force'
+    reason: rm with --force flag
+
+  - pattern: '\bsudo\s+rm\b'
+    reason: sudo rm
+
+  - pattern: '\brmdir\s+--ignore-fail-on-non-empty'
+    reason: rmdir ignore-fail
+
+  # ---------------------------------------------------------------------------
+  # PERMISSION CHANGES
+  # ---------------------------------------------------------------------------
+  - pattern: '\bchmod\s+(-[^\s]+\s+)*777\b'
+    reason: chmod 777 (world writable)
+
+  - pattern: '\bchmod\s+-[Rr].*777'
+    reason: recursive chmod 777
+
+  - pattern: '\bchown\s+-[Rr].*\broot\b'
+    reason: recursive chown to root
+
+  - pattern: '\bsudo\s+chmod\b'
+    reason: sudo chmod (requires confirmation)
+    ask: true
+
+  - pattern: '\bsudo\s+chown\b'
+    reason: sudo chown (requires confirmation)
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # SYSTEM-LEVEL DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bmkfs\.'
+    reason: filesystem format command
+
+  - pattern: '\bdd\s+.*of=/dev/'
+    reason: dd writing to device
+
+  - pattern: '\bdd\s+.*if=/dev/zero'
+    reason: dd with /dev/zero (disk wipe)
+
+  - pattern: '\bdd\s+.*if=/dev/urandom'
+    reason: dd with /dev/urandom (disk wipe)
+
+  - pattern: '\bshred\b'
+    reason: shred (secure file deletion)
+
+  - pattern: '\bwipe\b'
+    reason: wipe command
+
+  # ---------------------------------------------------------------------------
+  # PROCESS DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bkill\s+-9\s+-1\b'
+    reason: kill all processes
+
+  - pattern: '\bkillall\s+-9\b'
+    reason: killall -9
+
+  - pattern: '\bpkill\s+-9\b'
+    reason: pkill -9
+
+  - pattern: '\bsudo\s+kill\s+-9'
+    reason: sudo kill -9
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # HISTORY/SHELL MANIPULATION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bhistory\s+-c\b'
+    reason: clearing shell history
+
+  # ---------------------------------------------------------------------------
+  # CRON/SYSTEMD DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bcrontab\s+-r\b'
+    reason: crontab -r (removes all cron jobs)
+
+  - pattern: '\bsystemctl\s+disable\b'
+    reason: systemctl disable
+    ask: true
+
+  - pattern: '\bsystemctl\s+mask\b'
+    reason: systemctl mask (prevents service from starting)
+
+  - pattern: '\blaunchctl\s+unload\b'
+    reason: launchctl unload (macOS service removal)
+    ask: true
+
+  # ---------------------------------------------------------------------------
+  # MACOS SPECIFIC
+  # ---------------------------------------------------------------------------
+  - pattern: '\bdiskutil\s+eraseDisk\b'
+    reason: diskutil eraseDisk (macOS disk erase)
+
+  - pattern: '\bdiskutil\s+eraseVolume\b'
+    reason: diskutil eraseVolume (macOS volume erase)
+
+  - pattern: '\bdiskutil\s+secureErase\b'
+    reason: diskutil secureErase (macOS secure erase)
+
+  - pattern: '\bsudo\s+nvram\b'
+    reason: sudo nvram (macOS firmware settings)
+
+  - pattern: '\bsudo\s+csrutil\b'
+    reason: sudo csrutil (macOS SIP modification)
+
+  # ---------------------------------------------------------------------------
+  # FIND WITH DESTRUCTIVE ACTIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\bfind\s+.*-delete\b'
+    reason: find with -delete
+
+  - pattern: '\bfind\s+.*-exec\s+rm\b'
+    reason: find with -exec rm
+
+  - pattern: '\bfind\s+.*\|\s*xargs\s+rm\b'
+    reason: find piped to xargs rm
+
+  # ---------------------------------------------------------------------------
+  # NETWORK DESTRUCTION
+  # ---------------------------------------------------------------------------
+  - pattern: '\bifconfig\s+\w+\s+down\b'
+    reason: ifconfig interface down
+
+  - pattern: '\bip\s+link\s+set\s+\w+\s+down\b'
+    reason: ip link set down
+
+  - pattern: '\biptables\s+-F\b'
+    reason: iptables flush (clears firewall rules)
+
+  - pattern: '\bnft\s+flush\s+ruleset\b'
+    reason: nft flush ruleset (clears nftables)
+
+# ---------------------------------------------------------------------------
+# ZERO ACCESS PATHS - Unix/macOS Specific
+# ---------------------------------------------------------------------------
+zeroAccessPaths:
+  # SSH Keys and Config
+  - "~/.ssh/"
+  - "/etc/ssh/"
+
+  # GPG Keys
+  - "~/.gnupg/"
+
+  # Cloud Provider Credentials
+  - "~/.aws/"
+  - "~/.config/gcloud/"
+  - "~/.azure/"
+  - "~/.kube/"
+  - "~/.docker/"
+
+  # Platform tokens
+  - ".vercel/"
+  - ".netlify/"
+  - ".supabase/"
+
+  # Package Manager Auth
+  - "~/.netrc"
+  - "~/.npmrc"
+  - "~/.pypirc"
+  - "~/.git-credentials"
+
+  # macOS Keychain (don't mess with these)
+  - "~/Library/Keychains/"
+
+# ---------------------------------------------------------------------------
+# READ-ONLY PATHS - Unix/macOS Specific
+# ---------------------------------------------------------------------------
+readOnlyPaths:
+  # System Directories
+  - "/etc/"
+  - "/usr/"
+  - "/bin/"
+  - "/sbin/"
+  - "/boot/"
+  - "/root/"
+
+  # macOS System
+  - "/System/"
+  - "/Library/"
+  - "/Applications/"
+
+  # Shell History Files
+  - "~/.bash_history"
+  - "~/.zsh_history"
+  - "~/.node_repl_history"
+  - "~/.python_history"
+
+  # Shell Config Files
+  - "~/.bashrc"
+  - "~/.zshrc"
+  - "~/.profile"
+  - "~/.bash_profile"
+  - "~/.zprofile"
+
+# ---------------------------------------------------------------------------
+# NO-DELETE PATHS - Unix/macOS Specific
+# ---------------------------------------------------------------------------
+noDeletePaths:
+  # User config directory
+  - "~/.claude/"
+  - "~/.config/"
+
+  # Homebrew (macOS)
+  - "/opt/homebrew/"
+  - "/usr/local/Cellar/"
