@@ -356,6 +356,30 @@ bashToolPatterns:
     reason: supabase db reset
 
   # ---------------------------------------------------------------------------
+  # AZURE CLI DESTRUCTIVE OPERATIONS
+  # ---------------------------------------------------------------------------
+  - pattern: '\baz\s+group\s+delete\b'
+    reason: az group delete (deletes entire resource group)
+
+  - pattern: '\baz\s+vm\s+delete\b'
+    reason: az vm delete (deletes VM)
+
+  - pattern: '\baz\s+sql\s+server\s+delete\b'
+    reason: az sql server delete
+
+  - pattern: '\baz\s+aks\s+delete\b'
+    reason: az aks delete (deletes AKS cluster)
+
+  - pattern: '\baz\s+storage\s+account\s+delete\b'
+    reason: az storage account delete
+
+  - pattern: '\baz\s+webapp\s+delete\b'
+    reason: az webapp delete
+
+  - pattern: '\baz\s+functionapp\s+delete\b'
+    reason: az functionapp delete
+
+  # ---------------------------------------------------------------------------
   # GITHUB CLI DESTRUCTIVE OPERATIONS
   # ---------------------------------------------------------------------------
   - pattern: '\bgh\s+repo\s+delete\b'
@@ -366,6 +390,9 @@ bashToolPatterns:
   # ---------------------------------------------------------------------------
   - pattern: '\bnpm\s+unpublish\b'
     reason: npm unpublish (removes package from registry)
+
+  - pattern: '\bdotnet\s+nuget\s+delete\b'
+    reason: dotnet nuget delete (removes package from feed)
 
   # ---------------------------------------------------------------------------
   # SQL DESTRUCTIVE OPERATIONS (catastrophic - no WHERE clause)
@@ -451,6 +478,8 @@ zeroAccessPaths:
   - "*.key"
   - "*.p12"
   - "*.pfx"
+  - "*.crt"
+  - "*.cer"
 
   # ---------------------------------------------------------------------------
   # TERRAFORM STATE (contains secrets in plaintext!)
@@ -487,6 +516,7 @@ zeroAccessPaths:
   - "dump.sql"
   - "backup.sql"
   - "*.dump"
+  - "*.bak"
 
   # ---------------------------------------------------------------------------
   # WINDOWS CREDENTIAL STORES (MITRE T1003.002, T1003.004, T1003.005)
@@ -638,6 +668,7 @@ readOnlyPaths:
   - "bun.lockb"
   - "uv.lock"
   - "npm-shrinkwrap.json"
+  - "packages.lock.json"
   - "*.lock"
   - "*.lockb"
 
