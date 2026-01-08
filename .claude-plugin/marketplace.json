@@ -1,0 +1,31 @@
+{
+  "name": "damage-control-marketplace",
+  "owner": {
+    "name": "ilude"
+  },
+  "description": "Security hooks marketplace for Claude Code",
+  "plugins": [
+    {
+      "name": "damage-control",
+      "source": {
+        "github": "ilude/claude-code-damage-control",
+        "path": "plugins/python"
+      },
+      "description": "Defense-in-depth protection (Python/UV) - blocks dangerous commands and protects sensitive files",
+      "version": "1.0.0",
+      "category": "security",
+      "keywords": ["security", "hooks", "protection", "python"]
+    },
+    {
+      "name": "damage-control-typescript",
+      "source": {
+        "github": "ilude/claude-code-damage-control",
+        "path": "plugins/typescript"
+      },
+      "description": "Defense-in-depth protection (TypeScript/Bun) - blocks dangerous commands and protects sensitive files",
+      "version": "1.0.0",
+      "category": "security",
+      "keywords": ["security", "hooks", "protection", "typescript", "bun"]
+    }
+  ]
+}
