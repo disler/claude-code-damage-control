@@ -45,11 +45,10 @@ cd claude-code-damage-control
 ### Requirements
 
 **Python version (`damage-control`)**:
-- Python 3.8+
-- [UV package manager](https://astral.sh/uv)
+- [UV package manager](https://astral.sh/uv) (automatically manages Python 3.8+)
 
 **TypeScript version (`damage-control-typescript`)**:
-- [Bun](https://bun.sh/) 1.0+
+- [Bun](https://bun.sh/) 1.0+ (install via `curl -fsSL https://bun.sh/install | bash` or `npm install -g bun`)
 
 ---
 
