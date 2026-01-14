@@ -3,15 +3,15 @@
 # dependencies = ["pyyaml"]
 # ///
 """
-Claude Code Edit Tool Damage Control
+Claude Code Read Tool Damage Control
 =====================================
 
-Blocks edits to protected files via PreToolUse hook on Edit tool.
-Loads zeroAccessPaths and readOnlyPaths from patterns.yaml.
+Blocks reads from protected files via PreToolUse hook on Read tool.
+Loads zeroAccessPaths from patterns.yaml (readOnlyPaths allow reads).
 
 Exit codes:
-  0 = Allow edit
-  2 = Block edit (stderr fed back to Claude)
+  0 = Allow read
+  2 = Block read (stderr fed back to Claude)
 """
 
 import json
@@ -19,7 +19,7 @@ import sys
 import os
 import fnmatch
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, Tuple
 
 import yaml
 
@@ -88,7 +88,7 @@ def load_config() -> Dict[str, Any]:
     config_path = get_config_path()
 
     if not config_path.exists():
-        return {"zeroAccessPaths": [], "readOnlyPaths": []}
+        return {"zeroAccessPaths": []}
 
     with open(config_path, "r") as f:
         config = yaml.safe_load(f) or {}
@@ -97,16 +97,11 @@ def load_config() -> Dict[str, Any]:
 
 
 def check_path(file_path: str, config: Dict[str, Any]) -> Tuple[bool, str]:
-    """Check if file_path is blocked. Returns (blocked, reason)."""
-    # Check zero-access paths first (no access at all)
+    """Check if file_path is blocked for reading. Returns (blocked, reason)."""
+    # Only check zero-access paths (readOnlyPaths allow reads)
     for zero_path in config.get("zeroAccessPaths", []):
         if match_path(file_path, zero_path):
             return True, f"zero-access path {zero_path} (no operations allowed)"
-
-    # Check read-only paths (edits not allowed)
-    for readonly in config.get("readOnlyPaths", []):
-        if match_path(file_path, readonly):
-            return True, f"read-only path {readonly}"
 
     return False, ""
 
@@ -124,18 +119,18 @@ def main() -> None:
     tool_name = input_data.get("tool_name", "")
     tool_input = input_data.get("tool_input", {})
 
-    # Only check Edit tool
-    if tool_name != "Edit":
+    # Only check Read tool
+    if tool_name != "Read":
         sys.exit(0)
 
-    file_path = tool_input.get("file_path", "")
+    file_path = tool_input.get("file_path", "") or tool_input.get("filePath", "")
     if not file_path:
         sys.exit(0)
 
     # Check if file is blocked
     blocked, reason = check_path(file_path, config)
     if blocked:
-        print(f"SECURITY: Blocked edit to {reason}: {file_path}", file=sys.stderr)
+        print(f"SECURITY: Blocked read from {reason}: {file_path}", file=sys.stderr)
         sys.exit(2)
 
     sys.exit(0)
