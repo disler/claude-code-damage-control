@@ -35,6 +35,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/damage-control/read-tool-damage-control.py",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
