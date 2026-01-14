@@ -52,8 +52,10 @@ def match_path(file_path: str, pattern: str) -> bool:
             return True
         return False
     else:
-        # Prefix matching (original behavior for directories)
-        if expanded_normalized.startswith(expanded_pattern) or expanded_normalized == expanded_pattern.rstrip('/'):
+        # Prefix matching (case-insensitive for security on case-insensitive filesystems like macOS)
+        expanded_normalized_lower = expanded_normalized.lower()
+        expanded_pattern_lower = expanded_pattern.lower()
+        if expanded_normalized_lower.startswith(expanded_pattern_lower) or expanded_normalized_lower == expanded_pattern_lower.rstrip('/'):
             return True
         return False
 

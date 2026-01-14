@@ -183,7 +183,8 @@ def check_path_patterns(command: str, path: str, patterns: List[Tuple[str, str]]
             pattern_expanded = pattern_template.replace("{path}", escaped_expanded)
             pattern_original = pattern_template.replace("{path}", escaped_original)
             try:
-                if re.search(pattern_expanded, command) or re.search(pattern_original, command):
+                # Case-insensitive for security on case-insensitive filesystems like macOS
+                if re.search(pattern_expanded, command, re.IGNORECASE) or re.search(pattern_original, command, re.IGNORECASE):
                     return True, f"Blocked: {operation} operation on {path_type} {path}"
             except re.error:
                 continue
@@ -236,7 +237,8 @@ def check_command(command: str, config: Dict[str, Any]) -> Tuple[bool, bool, str
             escaped_original = re.escape(zero_path)
 
             # Check both expanded path (/Users/x/.ssh/) and original tilde form (~/.ssh/)
-            if re.search(escaped_expanded, command) or re.search(escaped_original, command):
+            # Case-insensitive for security on case-insensitive filesystems like macOS
+            if re.search(escaped_expanded, command, re.IGNORECASE) or re.search(escaped_original, command, re.IGNORECASE):
                 return True, False, f"Blocked: zero-access path {zero_path} (no operations allowed)"
 
     # 3. Check for modifications to read-only paths (reads allowed)
