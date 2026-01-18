@@ -1,0 +1,17 @@
+{
+  "name": "path-normalization",
+  "version": "1.0.0",
+  "description": "Enforces relative paths with forward slashes for Edit/Write tools. Blocks absolute paths and guides Claude to use workspace-relative paths.",
+  "author": {
+    "name": "ilude",
+    "url": "https://github.com/ilude"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ilude/claude-code-damage-control",
+  "repository": "https://github.com/ilude/claude-code-damage-control.git",
+  "keywords": ["paths", "normalization", "relative", "hooks", "developer-tools"],
+  "category": "developer-tools",
+  "runtime": {
+    "requires": ["python>=3.8", "uv"]
+  }
+}

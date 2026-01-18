@@ -1,0 +1,183 @@
+# Damage Control Test Fixtures
+# ============================
+# Test cases for batch testing mode
+#
+# Structure:
+#   <suite_name>:
+#     blocked:     # Tests that should be blocked
+#       - command: "actual command"
+#         reason: "Human-readable reason"
+#         hook: "bash|edit|write" (default: bash)
+#         tool: "Bash|Edit|Write" (default: Bash)
+#     allowed:     # Tests that should be allowed
+#       - command: "actual command"
+#         reason: "Human-readable reason"
+#         hook: "bash|edit|write" (default: bash)
+#         tool: "Bash|Edit|Write" (default: Bash)
+
+# ============================================================================
+# SHELL UNWRAPPING TESTS
+# Tests for blocking shell wrapper commands that attempt to bypass restrictions
+# Note: Additional wrapper patterns (Python, Node, Ruby) can be added to patterns.yaml
+# ============================================================================
+shellUnwrapping:
+  blocked:
+    # Bash -c wrapper with destructive commands
+    - command: "bash -c 'rm -rf /'"
+      reason: "Shell wrapper bash -c with recursive rm on root"
+
+    - command: "sh -c 'git reset --hard'"
+      reason: "Shell wrapper sh -c with destructive git"
+
+    - command: "bash -c 'sudo rm -rf /'"
+      reason: "Shell wrapper with sudo destruction"
+
+    - command: "bash -c 'chmod 777 ~/.ssh/id_rsa'"
+      reason: "Shell wrapper with permission changes"
+
+  allowed:
+    # Safe shell commands without wrappers
+    - command: "bash script.sh"
+      reason: "Normal bash script execution"
+
+    - command: "python script.py"
+      reason: "Normal python script execution"
+
+    - command: "node script.js"
+      reason: "Normal node script execution"
+
+    # Shell commands for legitimate purposes
+    - command: "bash -c 'echo hello world'"
+      reason: "Bash -c with safe echo command"
+
+    - command: "sh -c 'ls -la /tmp'"
+      reason: "Shell -c with safe listing"
+
+    - command: "bash -c 'cat ~/.gitconfig'"
+      reason: "Bash -c with safe file read"
+
+
+# ============================================================================
+# GIT SEMANTIC TESTS
+# Tests for git operations (safe vs dangerous)
+# ============================================================================
+gitSemantic:
+  blocked:
+    # Force push without lease
+    - command: "git push --force"
+      reason: "Force push without safety (use --force-with-lease)"
+
+    - command: "git push origin main --force"
+      reason: "Force push to specific branch"
+
+    - command: "git push -f"
+      reason: "Short form force push"
+
+    # Hard reset
+    - command: "git reset --hard"
+      reason: "Hard reset discards uncommitted changes"
+
+    - command: "git reset --hard HEAD~1"
+      reason: "Hard reset to previous commit"
+
+    # History destruction
+    - command: "git reflog expire --expire=now --all"
+      reason: "Destroying recovery mechanism"
+
+    - command: "git gc --prune=now"
+      reason: "Aggressive garbage collection can lose commits"
+
+    # Stash operations
+    - command: "git stash clear"
+      reason: "Clear all stashes (permanent deletion)"
+
+  allowed:
+    # Safe force with lease
+    - command: "git push --force-with-lease"
+      reason: "Safe force push variant"
+
+    - command: "git push origin main --force-with-lease"
+      reason: "Safe force push to specific branch"
+
+    # Safe checkout/restore
+    - command: "git checkout feature-branch"
+      reason: "Safe branch checkout"
+
+    - command: "git checkout src/file.ts"
+      reason: "Safe file checkout (with path)"
+
+    # Safe reset operations
+    - command: "git reset --soft HEAD~1"
+      reason: "Soft reset preserves changes"
+
+    - command: "git reset HEAD~1"
+      reason: "Mixed reset is safer"
+
+    # Safe branch operations
+    - command: "git branch -d old-feature"
+      reason: "Safe branch deletion (only if merged)"
+
+
+# ============================================================================
+# BACKWARD COMPATIBILITY TESTS
+# Tests to ensure existing blocking patterns still work
+# ============================================================================
+backwardCompat:
+  blocked:
+    # Classic destructive operations - catastrophic
+    - command: "rm -rf ~/"
+      reason: "Remove home directory recursively"
+
+    - command: "rm -rf /"
+      reason: "Remove root directory"
+
+    # Database operations
+    - command: "redis-cli FLUSHALL"
+      reason: "Redis clear all databases"
+
+    - command: "dropdb production"
+      reason: "PostgreSQL drop entire database"
+
+    # Cloud provider operations
+    - command: "aws s3 rm s3://prod-bucket --recursive"
+      reason: "AWS S3 recursive delete"
+
+    - command: "gcloud projects delete my-prod-project"
+      reason: "GCloud delete entire project"
+
+    - command: "terraform destroy -auto-approve"
+      reason: "Terraform destroy infrastructure"
+
+    - command: "kubectl delete all --all --all-namespaces"
+      reason: "Kubernetes delete everything"
+
+  allowed:
+    # Safe file operations
+    - command: "ls -la /home"
+      reason: "Safe directory listing"
+
+    - command: "cat ~/.bashrc"
+      reason: "Safe file read"
+
+    - command: "mkdir -p ~/projects/new-project"
+      reason: "Safe directory creation"
+
+    # Safe git operations
+    - command: "git status"
+      reason: "Git status check"
+
+    - command: "git log --oneline"
+      reason: "Git view history"
+
+    - command: "git add ."
+      reason: "Git stage changes"
+
+    # Safe cloud operations
+    - command: "aws s3 ls s3://prod-bucket"
+      reason: "AWS S3 list operation"
+
+    - command: "gcloud compute instances list"
+      reason: "GCloud list resources"
+
+    - command: "terraform plan"
+      reason: "Terraform preview changes"

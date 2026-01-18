@@ -1,0 +1,20 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Edit",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run \"$PLUGIN_DIR\"/hooks/path-normalization-hook.py",
+        "timeout": 5
+      }]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run \"$PLUGIN_DIR\"/hooks/path-normalization-hook.py",
+        "timeout": 5
+      }]
+    }
+  ]
+}

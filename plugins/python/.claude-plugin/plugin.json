@@ -1,0 +1,17 @@
+{
+  "name": "damage-control",
+  "version": "1.0.0",
+  "description": "Defense-in-depth protection for Claude Code (Python/UV). Blocks dangerous commands and protects sensitive files.",
+  "author": {
+    "name": "ilude",
+    "url": "https://github.com/ilude"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ilude/claude-code-damage-control",
+  "repository": "https://github.com/ilude/claude-code-damage-control.git",
+  "keywords": ["security", "hooks", "protection", "firewall", "python"],
+  "category": "security",
+  "runtime": {
+    "requires": ["python>=3.8", "uv"]
+  }
+}

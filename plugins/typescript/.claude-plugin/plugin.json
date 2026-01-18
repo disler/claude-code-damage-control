@@ -1,0 +1,17 @@
+{
+  "name": "damage-control-typescript",
+  "version": "1.0.0",
+  "description": "Defense-in-depth protection for Claude Code (TypeScript/Bun). Blocks dangerous commands and protects sensitive files.",
+  "author": {
+    "name": "ilude",
+    "url": "https://github.com/ilude"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ilude/claude-code-damage-control",
+  "repository": "https://github.com/ilude/claude-code-damage-control.git",
+  "keywords": ["security", "hooks", "protection", "firewall", "typescript", "bun"],
+  "category": "security",
+  "runtime": {
+    "requires": ["bun>=1.0"]
+  }
+}

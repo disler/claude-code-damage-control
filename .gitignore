@@ -46,3 +46,6 @@ out/
 # AI Docs
 ai_docs/*.md
 !ai_docs/README.md
+
+# Claude Code temp files
+tmpclaude-*-cwd
